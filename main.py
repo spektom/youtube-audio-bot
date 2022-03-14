@@ -36,7 +36,7 @@ def get_audio_duration(audio_file):
 
 
 def audio_convert_enhance(input_file, offset, size_limit, output_file):
-    logging.info(f"Running second pass on file '{input_file}'")
+    logging.info(f"Converting audio file '{input_file}'")
     subprocess.run(
         [
             "ffmpeg",
@@ -68,12 +68,12 @@ def split_audio(audio_file, duration_secs):
     logging.info(f"Splitting audio file '{audio_file}'")
     while offset < duration_secs:
         part_file = f"{audio_file}-{part_idx}.mp3"
-        logging.info(f"Creating '{part_file}'")
         audio_convert_enhance(audio_file, offset, TELEGRAM_FILE_SIZE_LIMIT, part_file)
         part_len = get_audio_duration(part_file)
         if part_len == 0:
             os.remove(part_file)
             break
+        logging.info(f"Created audio file '{part_file}', duration: {part_len} secs")
         parts.append((part_file, part_len))
         offset += part_len
         part_idx += 1
