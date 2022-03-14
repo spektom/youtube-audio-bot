@@ -7,6 +7,7 @@ import requests
 import subprocess
 import sys
 import telegram
+import time
 import youtube_dl
 
 from datetime import datetime, timedelta, timezone
@@ -90,16 +91,26 @@ def send_to_telegram(author, title, publish_date, audio_parts):
         if len(audio_parts) > 1:
             full_title += f" part {part_num}"
         logging.info(f"Sending '{title}' ('{audio_file}') to Telegram channel")
-        with open(audio_file, "rb") as f:
-            bot.send_audio(
-                chat_id=TELEGRAM_CHANNEL_ID,
-                audio=f,
-                duration=duration,
-                performer=author,
-                title=full_title,
-                caption=full_title,
-            )
+        retries = 3
+        while retries > 0:
+            with open(audio_file, "rb") as f:
+                try:
+                    bot.send_audio(
+                        chat_id=TELEGRAM_CHANNEL_ID,
+                        audio=f,
+                        duration=duration,
+                        performer=author,
+                        title=full_title,
+                        caption=full_title,
+                    )
+                    break
+                except telegram.error.RetryAfter as r:
+                    logging.warning(f"Retrying after {r.retry_after} secs")
+                    time.sleep(r.retry_after)
+                    retries -= 1
         part_num += 1
+        if len(audio_parts) > 1:
+            time.sleep(20)
 
 
 def youtube_download_audio(url):
@@ -194,6 +205,7 @@ def process_channels(channels):
                 process_video(f"https://www.youtube.com/watch?v={video_id}", video_date)
                 channel["last_seen"] = video_date.isoformat()
                 write_channels(channels)
+            time.sleep(10)
 
 
 def read_channels():
