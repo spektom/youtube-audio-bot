@@ -37,6 +37,7 @@ def get_audio_duration(audio_file):
 
 def audio_convert_enhance(input_file, offset, size_limit, output_file):
     logging.info(f"Converting audio file '{input_file}'")
+    # Convert to MP3 and normalize voice volume
     subprocess.run(
         [
             "ffmpeg",
@@ -113,7 +114,8 @@ def send_to_telegram(author, title, publish_date, audio_parts):
             time.sleep(20)
 
 
-def youtube_download_audio(url):
+def youtube_download_audio(video_id):
+    url = f"https://www.youtube.com/watch?v={video_id}"
     logging.info(f"Downloading audio from '{url}'")
     tmpfile = "_audio"
     downloader = youtube_dl.YoutubeDL(
@@ -174,12 +176,22 @@ def youtube_list_channel_videos(channel_name, channel_id, published_after):
     return sorted(results, key=lambda v: v[1])
 
 
-def process_video(url, publish_date):
-    audio_file, duration_secs, author, title = youtube_download_audio(url)
+def process_video(video_id, publish_date):
+    retries = 0
+    while True:
+        audio_file, duration_secs, author, title = youtube_download_audio(video_id)
+        # Check that most of the file was downloaded correctly
+        if get_audio_duration(audio_file) / float(duration_secs) > 0.8:
+            if retries < 3:
+                break
+            else:
+                return False
+        retires += 1
     audio_parts = split_audio(audio_file, duration_secs)
     send_to_telegram(author, title, publish_date, audio_parts)
     for f, _ in audio_parts:
         os.remove(f)
+    return True
 
 
 def process_channels(channels):
@@ -202,9 +214,9 @@ def process_channels(channels):
                 channel["name"], channel_id, from_date
             )
             for video_id, video_date in new_videos:
-                process_video(f"https://www.youtube.com/watch?v={video_id}", video_date)
-                channel["last_seen"] = video_date.isoformat()
-                write_channels(channels)
+                if process_video(video_id, video_date):
+                    channel["last_seen"] = video_date.isoformat()
+                    write_channels(channels)
             time.sleep(10)
 
 
