@@ -36,7 +36,7 @@ def get_audio_duration(audio_file):
 
 
 def audio_convert_enhance(input_file, offset, size_limit, output_file):
-    logging.info(f"Converting audio file '{input_file}'")
+    logging.info(f"processing '{input_file}', offset={offset}")
     # Convert to MP3 and normalize voice volume
     subprocess.run(
         [
@@ -66,7 +66,7 @@ def split_audio(audio_file, duration_secs):
     parts = []
     part_idx = 0
     offset = 0
-    logging.info(f"Splitting audio file '{audio_file}'")
+    logging.info(f"splitting '{audio_file}', duration={duration_secs}")
     while offset < duration_secs:
         part_file = f"{audio_file}-{part_idx}.mp3"
         audio_convert_enhance(audio_file, offset, TELEGRAM_FILE_SIZE_LIMIT, part_file)
@@ -74,7 +74,7 @@ def split_audio(audio_file, duration_secs):
         if part_len == 0:
             os.remove(part_file)
             break
-        logging.info(f"Created audio file '{part_file}', duration: {part_len} secs")
+        logging.info(f"created '{part_file}', duration={part_len}")
         parts.append((part_file, part_len))
         offset += part_len
         part_idx += 1
@@ -91,7 +91,7 @@ def send_to_telegram(author, title, publish_date, audio_parts):
             full_title += " " + publish_date.strftime("%d.%m")
         if len(audio_parts) > 1:
             full_title += f" part {part_num}"
-        logging.info(f"Sending '{title}' ('{audio_file}') to Telegram channel")
+        logging.info(f"posting '{audio_file}', duration={duration}")
         retries = 3
         while retries > 0:
             with open(audio_file, "rb") as f:
@@ -106,7 +106,7 @@ def send_to_telegram(author, title, publish_date, audio_parts):
                     )
                     break
                 except telegram.error.RetryAfter as r:
-                    logging.warning(f"Retrying after {r.retry_after} secs")
+                    logging.warning(f"retrying after {r.retry_after} secs")
                     time.sleep(r.retry_after)
                     retries -= 1
         part_num += 1
@@ -116,19 +116,31 @@ def send_to_telegram(author, title, publish_date, audio_parts):
 
 def youtube_download_audio(video_id):
     url = f"https://www.youtube.com/watch?v={video_id}"
-    logging.info(f"Downloading audio from '{url}'")
+    logging.info(f"downloading audio from '{url}'")
     tmpfile = "_audio"
     downloader = youtube_dl.YoutubeDL(
         {"format": "bestaudio", "outtmpl": tmpfile, "quiet": True}
     )
-    info = downloader.extract_info(url)
+    retries = 0
+    while True:
+        try:
+            info = downloader.extract_info(url)
+            break
+        except youtube_dl.utils.DownloadError as e:
+            if "requested format not available" in str(e):
+                return None
+            if retries >= 3:
+                raise e
+            logging.info(f"download error '{e}', retrying")
+            retries += 1
     title = info["title"]
-    logging.info(f"Saved '{title}' saved '{tmpfile}'")
-    return (tmpfile, info["duration"], info["uploader"], title)
+    duration = info["duration"]
+    logging.info(f"saved '{tmpfile}', title='{title}', duration={duration}")
+    return (tmpfile, duration, info["uploader"], title)
 
 
 def youtube_list_user_channels(user_name):
-    logging.info(f"Listing user '{user_name}' channels")
+    logging.info(f"listing channels for user '{user_name}'")
     r = requests.get(
         "https://www.googleapis.com/youtube/v3/channels",
         params={
@@ -145,7 +157,7 @@ def youtube_list_user_channels(user_name):
 
 def youtube_list_channel_videos(channel_name, channel_id, published_after):
     logging.info(
-        f"Searching '{channel_name}' videos published after {published_after.strftime('%Y/%m/%d')}"
+        f"searching videos on '{channel_name}', published after {published_after.strftime('%Y/%m/%d')}"
     )
     r = requests.get(
         "https://www.googleapis.com/youtube/v3/search",
@@ -172,20 +184,25 @@ def youtube_list_channel_videos(channel_name, channel_id, published_after):
             item["snippet"]["publishTime"], "%Y-%m-%dT%H:%M:%S%z"
         )
         results.append((video_id, video_date))
-    logging.info(f"Found {len(results)} new videos")
+    logging.info(f"found {len(results)} new videos")
     return sorted(results, key=lambda v: v[1])
 
 
 def process_video(video_id, publish_date):
     retries = 0
     while True:
-        audio_file, duration_secs, author, title = youtube_download_audio(video_id)
+        r = youtube_download_audio(video_id)
+        if r is None:
+            return False
+        audio_file, duration_secs, author, title = r
         # Check that most of the file was downloaded correctly
         if get_audio_duration(audio_file) / float(duration_secs) > 0.8:
             if retries < 3:
                 break
             else:
+                logging.info("couldn't download in 3 retries, skipping")
                 return False
+        logging.info("downloaded audio is too short, retrying")
         retires += 1
     audio_parts = split_audio(audio_file, duration_secs)
     send_to_telegram(author, title, publish_date, audio_parts)
