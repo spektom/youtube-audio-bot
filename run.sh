@@ -5,6 +5,8 @@ if [ -z ${VIRTUAL_ENV+x} ]; then
   source venv/bin/activate
 fi
 
+[ -d .audio ] || mkdir .audio
+
 . config.sh
 while true; do
   TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN \

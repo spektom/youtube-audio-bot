@@ -1,3 +1,4 @@
-youtube_dl == 2021.12.17
+backoff == 1.11.1
 python-telegram-bot == 13.11
 requests == 2.27.1
+youtube_dl == 2021.12.17

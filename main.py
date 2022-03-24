@@ -9,6 +9,7 @@ import sys
 import telegram
 import time
 import youtube_dl
+import backoff
 
 from datetime import datetime, timedelta, timezone
 
@@ -78,65 +79,66 @@ def split_audio(audio_file, duration_secs):
         parts.append((part_file, part_len))
         offset += part_len
         part_idx += 1
-    os.remove(audio_file)
     return parts
 
 
-def send_to_telegram(author, title, publish_date, audio_parts):
-    bot = telegram.Bot(token=TELEGRAM_BOT_TOKEN)
-    part_num = 1
-    for audio_file, duration in audio_parts:
+@backoff.on_exception(backoff.expo, Exception)
+def send_file_to_telegram(audio_file, duration, author, title):
+    logging.info(f"sending '{audio_file}', title='{title}', duration={duration}")
+    with open(audio_file, "rb") as f:
+        try:
+            bot = telegram.Bot(token=TELEGRAM_BOT_TOKEN)
+            bot.send_audio(
+                chat_id=TELEGRAM_CHANNEL_ID,
+                audio=f,
+                duration=duration,
+                performer=author,
+                title=title,
+                caption=title,
+            )
+        except telegram.error.RetryAfter as r:
+            logging.warning(f"retrying after {r.retry_after} secs")
+            time.sleep(r.retry_after)
+            raise r
+
+
+def send_to_telegram(video_id, author, title, publish_date, audio_parts):
+    for part_num, (audio_file, duration) in enumerate(audio_parts, 1):
         full_title = title
         if not any(char.isdigit() for char in title):
             full_title += " " + publish_date.strftime("%d.%m")
         if len(audio_parts) > 1:
             full_title += f" part {part_num}"
-        logging.info(f"posting '{audio_file}', duration={duration}")
-        retries = 3
-        while retries > 0:
-            with open(audio_file, "rb") as f:
-                try:
-                    bot.send_audio(
-                        chat_id=TELEGRAM_CHANNEL_ID,
-                        audio=f,
-                        duration=duration,
-                        performer=author,
-                        title=full_title,
-                        caption=full_title,
-                    )
-                    break
-                except telegram.error.RetryAfter as r:
-                    logging.warning(f"retrying after {r.retry_after} secs")
-                    time.sleep(r.retry_after)
-                    retries -= 1
-        part_num += 1
+        full_title += f"\nOriginal: https://youtu.be/{video_id}"
+        send_file_to_telegram(audio_file, duration, author, full_title)
         if len(audio_parts) > 1:
             time.sleep(20)
 
 
+@backoff.on_exception(backoff.expo, Exception)
 def youtube_download_audio(video_id):
     url = f"https://www.youtube.com/watch?v={video_id}"
     logging.info(f"downloading audio from '{url}'")
-    tmpfile = "_audio"
-    downloader = youtube_dl.YoutubeDL(
-        {"format": "bestaudio", "outtmpl": tmpfile, "quiet": True}
-    )
-    retries = 0
-    while True:
-        try:
-            info = downloader.extract_info(url)
-            break
-        except youtube_dl.utils.DownloadError as e:
-            if "requested format not available" in str(e):
-                return None
-            if retries >= 3:
-                raise e
-            logging.info(f"download error '{e}', retrying")
-            retries += 1
+    tmpfile = f".audio/{video_id}"
+    try:
+        downloader = youtube_dl.YoutubeDL(
+            {"format": "bestaudio/best", "outtmpl": tmpfile, "quiet": True}
+        )
+        info = downloader.extract_info(url)
+    except youtube_dl.utils.DownloadError as e:
+        if "requested format not available" in str(e):
+            logging.warning(str(e))
+            return None
+        raise e
+    author = info["uploader"]
     title = info["title"]
     duration = info["duration"]
+    # Check that most of the file was downloaded correctly
+    if duration == 0 or get_audio_duration(tmpfile) / float(duration) < 0.8:
+        os.remove(tmpfile)
+        raise Exception("downloaded file is too small")
     logging.info(f"saved '{tmpfile}', title='{title}', duration={duration}")
-    return (tmpfile, duration, info["uploader"], title)
+    return (tmpfile, author, title, duration)
 
 
 def youtube_list_user_channels(user_name):
@@ -189,23 +191,13 @@ def youtube_list_channel_videos(channel_name, channel_id, published_after):
 
 
 def process_video(video_id, publish_date):
-    retries = 0
-    while True:
-        r = youtube_download_audio(video_id)
-        if r is None:
-            return False
-        audio_file, duration_secs, author, title = r
-        # Check that most of the file was downloaded correctly
-        if get_audio_duration(audio_file) / float(duration_secs) > 0.8:
-            if retries < 3:
-                break
-            else:
-                logging.info("couldn't download in 3 retries, skipping")
-                return False
-        logging.info("downloaded audio is too short, retrying")
-        retires += 1
+    r = youtube_download_audio(video_id)
+    if r is None:
+        return False
+    audio_file, author, title, duration_secs = r
     audio_parts = split_audio(audio_file, duration_secs)
-    send_to_telegram(author, title, publish_date, audio_parts)
+    send_to_telegram(video_id, author, title, publish_date, audio_parts)
+    os.remove(audio_file)
     for f, _ in audio_parts:
         os.remove(f)
     return True
