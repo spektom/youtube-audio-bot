@@ -34,28 +34,31 @@ The following parameters must be set in `config.sh` file:
  * `TELEGRAM_CHANNEL_ID` - ID of the Telegram channel audio messages will be sent to.
  * `GOOGLE_API_TOKEN` - Google API key used for searching new YouTube channel videos.
  * `REFRESH_INTERVAL_SECS` - Script run frequency in seconds.
-
-In addition to the above parameters, file `channels.json` must contain
-at least one YouTube channel or user name. For example:
-
-```json
-{
-  "channels": [
-    {
-      "channel_id": "UCWAIvx2yYLK_xTYD4F2mUNw",
-      "name": "Живой Гвоздь",
-    },
-    {
-      "user_name": "sparkhom",
-      "name": "Сергей Пархоменко",
-    },
-    ...
-  ]
-}
-```
+ * `HTTP_PORT` - HTTP port on which the Web service will be listening.
 
 ## Running
 
 Use `run.sh` to run the process.
 The script invokes `setup.sh` on the first run, if the Python environment is not prepared yet.
 
+## HTTP Endpoints
+
+### Adding new YouTube channel
+
+Adding a YouTube channel:
+
+```bash
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Живой гвоздь", "youtube_id": "UCWAIvx2yYLK_xTYD4F2mUNw", "is_username": false}' \
+     http://localhost:$HTTP_PORT/channels
+```
+
+Adding a YouTube username:
+
+```bash
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Сергей Пархоменко", "youtube_id": "sparkhom", "is_username": true}' \
+     http://localhost:$HTTP_PORT/channels
+```
