@@ -106,10 +106,10 @@ def send_to_telegram(video_id, author, title, publish_date, audio_parts):
     for part_num, (audio_file, duration) in enumerate(audio_parts, 1):
         full_title = title
         if not any(char.isdigit() for char in title):
-            full_title += " " + publish_date.strftime("%d.%m")
+            full_title += " " + publish_date.strftime("%d.%m.%y")
         if len(audio_parts) > 1:
-            full_title += f" part {part_num}"
-        full_title += f"\nOriginal: https://youtu.be/{video_id}"
+            full_title += f" часть {part_num}"
+        full_title += f"\nоригинал: https://youtu.be/{video_id}"
         send_file_to_telegram(audio_file, duration, author, full_title)
         if len(audio_parts) > 1:
             time.sleep(20)
@@ -199,7 +199,8 @@ def process_video(video_id, publish_date):
     send_to_telegram(video_id, author, title, publish_date, audio_parts)
     os.remove(audio_file)
     for f, _ in audio_parts:
-        os.remove(f)
+        if f != audio_file:
+            os.remove(f)
     return True
 
 
