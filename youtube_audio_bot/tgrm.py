@@ -5,7 +5,7 @@ import telegram
 import time
 import backoff
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from .app import db
 from .model import TelegramMessages
 
@@ -61,3 +61,20 @@ def send_audio_files(
         db.session.commit()
         if len(audio_parts) > 1:
             time.sleep(delay_between_parts_sec)
+
+
+def delete_old_messages(days_back=7):
+    sent_ago = datetime.utcnow() - timedelta(days=days_back)
+    bot = telegram.Bot(token=TELEGRAM_BOT_TOKEN)
+    logging.info(f"deleting Telegram messages sent before {sent_ago}")
+    for m in TelegramMessages.query.filter(
+        (TelegramMessages.is_deleted == False) & (TelegramMessages.sent_on < sent_ago)
+    ):
+        try:
+            bot.delete_message(m.channel_id, m.message_id)
+            m.is_deleted = True
+            db.session.commit()
+        except telegram.error.RetryAfter as r:
+            logging.warning(f"retrying after {r.retry_after} secs")
+            time.sleep(r.retry_after)
+            raise r

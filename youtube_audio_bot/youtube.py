@@ -81,7 +81,7 @@ def list_channel_videos(channel_name, channel_id, published_after):
         video_date = datetime.strptime(
             item["snippet"]["publishTime"], "%Y-%m-%dT%H:%M:%S%z"
         ).astimezone(timezone.utc)
-        logging.info(f"found new video {video_id} published at {video_date}")
+        logging.info(f"found new video '{video_id}' published at {video_date}")
         results.append((video_id, video_date))
     logging.info(f"found {len(results)} new videos")
     return sorted(results, key=lambda v: v[1])

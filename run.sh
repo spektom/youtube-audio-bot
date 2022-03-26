@@ -2,10 +2,10 @@
 
 schedule_url_poll() {
   set +e
-  sleep $(shuf -i 5-20 -n 1)
+  sleep 5
   while true
   do
-    curl -m10000 -sSf $1 > /dev/null
+    curl -sSf $1 > /dev/null
     sleep $2
   done
 }

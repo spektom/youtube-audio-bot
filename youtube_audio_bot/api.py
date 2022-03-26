@@ -7,10 +7,16 @@ import youtube_audio_bot.audio as audio
 from datetime import datetime, timedelta, timezone
 from flask import request, jsonify
 from .app import app, db
-from .model import YoutubeSource
+from .model import YoutubeSources, ProcessedVideos
 
 
 def process_video(video_id, publish_date):
+    if (
+        ProcessedVideos.query.filter(ProcessedVideos.video_id == video_id).first()
+        is not None
+    ):
+        logging.info(f"skipping already processed video '{video_id}'")
+        return False
     r = youtube.download_audio(video_id)
     if r is None:
         return False
@@ -23,11 +29,12 @@ def process_video(video_id, publish_date):
     for f, _ in audio_parts:
         if f != audio_file:
             os.remove(f)
+    db.session.add(ProcessedVideos(video_id=video_id))
     return True
 
 
 def process_new_videos():
-    for source in YoutubeSource.query.all():
+    for source in YoutubeSources.query.all():
         channel_ids = []
         if source.is_username:
             channel_ids.extend(youtube.list_user_channels(source.youtube_id))
@@ -52,7 +59,7 @@ def process_new_videos():
 def add_channel():
     j = request.get_json()
     db.session.add(
-        YoutubeSource(
+        YoutubeSources(
             name=j["name"], youtube_id=j["youtube_id"], is_username=j["is_username"]
         )
     )
@@ -62,5 +69,6 @@ def add_channel():
 
 @app.route("/process", methods=["GET"])
 def process():
+    tgrm.delete_old_messages()
     process_new_videos()
     return "", 200
