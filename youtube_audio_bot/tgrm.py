@@ -7,7 +7,7 @@ import backoff
 
 from datetime import datetime
 from .app import db
-from .model import SentMessage
+from .model import TelegramMessages
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID")
@@ -52,7 +52,7 @@ def send_audio_files(
         )
         message = send_audio_file(audio_file, duration, author, formatted_title)
         db.session.add(
-            SentMessage(
+            TelegramMessages(
                 channel_id=message.chat.id,
                 message_id=message.message_id,
                 sent_on=datetime.utcnow(),

@@ -7,7 +7,7 @@ import youtube_audio_bot.audio as audio
 from datetime import datetime, timedelta, timezone
 from flask import request, jsonify
 from .app import app, db
-from .model import Channel
+from .model import YoutubeSource
 
 
 def process_video(video_id, publish_date):
@@ -27,36 +27,32 @@ def process_video(video_id, publish_date):
 
 
 def process_new_videos():
-    for channel in Channel.query.all():
+    for source in YoutubeSource.query.all():
         channel_ids = []
-        if channel.is_username:
-            channel_ids.extend(youtube.list_user_channels(channel.youtube_id))
+        if source.is_username:
+            channel_ids.extend(youtube.list_user_channels(source.youtube_id))
         else:
-            channel_ids.append(channel.youtube_id)
+            channel_ids.append(source.youtube_id)
         for channel_id in channel_ids:
-            if channel.last_checked is not None:
-                from_date = channel.last_checked.replace(
-                    tzinfo=timezone.utc
-                ) + timedelta(seconds=1)
-            else:
-                from_date = datetime.now().replace(tzinfo=timezone.utc) - timedelta(
-                    days=1
+            if source.last_checked is not None:
+                from_date = source.last_checked.astimezone(timezone.utc) + timedelta(
+                    seconds=1
                 )
-            new_videos = youtube.list_channel_videos(
-                channel.name, channel_id, from_date
-            )
+            else:
+                from_date = datetime.utcnow() - timedelta(days=1)
+            new_videos = youtube.list_channel_videos(source.name, channel_id, from_date)
             for video_id, video_date in new_videos:
                 if process_video(video_id, video_date):
-                    channel.last_checked = video_date
+                    source.last_checked = video_date
                     db.session.commit()
             time.sleep(10)
 
 
-@app.route("/channels", methods=["POST"])
+@app.route("/sources", methods=["POST"])
 def add_channel():
     j = request.get_json()
     db.session.add(
-        Channel(
+        YoutubeSource(
             name=j["name"], youtube_id=j["youtube_id"], is_username=j["is_username"]
         )
     )

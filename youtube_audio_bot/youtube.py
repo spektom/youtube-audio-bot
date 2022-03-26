@@ -5,7 +5,7 @@ import youtube_dl
 import backoff
 import youtube_audio_bot.audio as audio
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 GOOGLE_API_TOKEN = os.getenv("GOOGLE_API_TOKEN")
 
@@ -53,8 +53,9 @@ def list_user_channels(user_name):
 
 
 def list_channel_videos(channel_name, channel_id, published_after):
+    published_after = published_after.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
     logging.info(
-        f"searching videos on '{channel_name}', published after {published_after.strftime('%Y/%m/%d')}"
+        f"searching videos on '{channel_name}', published after {published_after}"
     )
     r = requests.get(
         "https://www.googleapis.com/youtube/v3/search",
@@ -64,7 +65,7 @@ def list_channel_videos(channel_name, channel_id, published_after):
             "type": "video",
             "maxResults": 30,
             "order": "date",
-            "publishedAfter": published_after.isoformat(),
+            "publishedAfter": published_after,
             "key": GOOGLE_API_TOKEN,
         },
     )
@@ -79,7 +80,8 @@ def list_channel_videos(channel_name, channel_id, published_after):
         video_id = item["id"]["videoId"]
         video_date = datetime.strptime(
             item["snippet"]["publishTime"], "%Y-%m-%dT%H:%M:%S%z"
-        )
+        ).astimezone(timezone.utc)
+        logging.info(f"found new video {video_id} published at {video_date}")
         results.append((video_id, video_date))
     logging.info(f"found {len(results)} new videos")
     return sorted(results, key=lambda v: v[1])

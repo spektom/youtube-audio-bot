@@ -1,7 +1,7 @@
 from .app import app, db
 
 
-class Channel(db.Model):
+class YoutubeSource(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False)
     youtube_id = db.Column(db.Text, nullable=False, unique=True)
@@ -9,11 +9,12 @@ class Channel(db.Model):
     last_checked = db.Column(db.DateTime)
 
 
-class SentMessage(db.Model):
+class TelegramMessages(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     channel_id = db.Column(db.Integer)
     message_id = db.Column(db.Integer)
     sent_on = db.Column(db.DateTime)
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
 
 
 def init_db():
