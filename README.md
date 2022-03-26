@@ -5,7 +5,7 @@ Delivers audio from your favorite YouTube channels to a Telegram channel.
 
 The scheme of operation:
 
- * The process uses Google API key to go over all YouTube channels and users listed in `channels.json` file,
+ * The process uses Google API key to go over favorite YouTube channels and users,
    and finds new videos posted since the last time a video was processed from that channel.
  * Audio streams of newly posted videos are downloaded using `youtube-dl` utility.
  * Downloaded audio undergo a voice enhancement process using `ffmpeg`, which equalizes spikes and decays in voices levels.
