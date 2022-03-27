@@ -9,7 +9,7 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}/config.db".format(
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}/database.db".format(
     Path(__file__).parent.parent.absolute()
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False

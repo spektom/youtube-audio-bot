@@ -6,8 +6,7 @@ import backoff
 import youtube_audio_bot.audio as audio
 
 from datetime import datetime, timezone
-
-GOOGLE_API_TOKEN = os.getenv("GOOGLE_API_TOKEN")
+from .config import get_conf
 
 
 @backoff.on_exception(backoff.expo, Exception)
@@ -44,7 +43,7 @@ def list_user_channels(user_name):
             "part": "contentDetails",
             "maxResults": 5,
             "forUsername": user_name,
-            "key": GOOGLE_API_TOKEN,
+            "key": get_conf("google_api_token"),
         },
     )
     r.raise_for_status()
@@ -66,7 +65,7 @@ def list_channel_videos(channel_name, channel_id, published_after):
             "maxResults": 30,
             "order": "date",
             "publishedAfter": published_after,
-            "key": GOOGLE_API_TOKEN,
+            "key": get_conf("google_api_token"),
         },
     )
     r.raise_for_status()

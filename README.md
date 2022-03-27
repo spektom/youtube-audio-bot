@@ -28,13 +28,7 @@ apt install -y ffmpeg \
 
 ## Configuration
 
-The following parameters must be set in `config.sh` file:
-
- * `TELEGRAM_BOT_TOKEN` - Token key of the Telegram Bot that delivers audio messages.
- * `TELEGRAM_CHANNEL_ID` - ID of the Telegram channel audio messages will be sent to.
- * `GOOGLE_API_TOKEN` - Google API key used for searching new YouTube channel videos.
- * `REFRESH_INTERVAL_SECS` - Script run frequency in seconds.
- * `HTTP_PORT` - HTTP port on which the Web service will be listening.
+Refer to [updating configuration](#updating-configuration) section below.
 
 ## Running
 
@@ -42,6 +36,23 @@ Use `run.sh` to run the process.
 The script invokes `setup.sh` on the first run, if the Python environment is not prepared yet.
 
 ## HTTP Endpoints
+
+### Updating configuration
+
+The following configuration values must be set:
+
+ * `telegram_bot_token` - Token key of the Telegram Bot that delivers audio messages.
+ * `telegram_channel_id` - ID of the Telegram channel audio messages will be sent to.
+ * `google_api_token` - Google API key used for searching new YouTube channel videos.
+
+Updating configuration using API:
+
+```bash
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"telegram_bot_token": "...", "telegram_channel_id": "...", "google_api_token": "..."}' \
+     http://localhost:8056/config
+```
 
 ### Adding new YouTube channel
 
@@ -51,14 +62,14 @@ Adding a YouTube channel:
 curl -X POST \
      -H "Content-Type: application/json" \
      -d '{"name": "Живой гвоздь", "youtube_id": "UCWAIvx2yYLK_xTYD4F2mUNw", "is_username": false}' \
-     http://localhost:$HTTP_PORT/channels
+     http://localhost:8056/sources
 ```
 
-Adding a YouTube username:
+### Adding new YouTube username:
 
 ```bash
 curl -X POST \
      -H "Content-Type: application/json" \
      -d '{"name": "Сергей Пархоменко", "youtube_id": "sparkhom", "is_username": true}' \
-     http://localhost:$HTTP_PORT/channels
+     http://localhost:8056/sources
 ```

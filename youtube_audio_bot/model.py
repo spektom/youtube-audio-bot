@@ -1,6 +1,11 @@
 from .app import app, db
 
 
+class Config(db.Model):
+    key = db.Column(db.Text, primary_key=True)
+    value = db.Column(db.Text, nullable=False)
+
+
 class YoutubeSources(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False)

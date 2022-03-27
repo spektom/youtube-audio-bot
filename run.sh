@@ -21,12 +21,12 @@ if [ -z ${VIRTUAL_ENV+x} ]; then
   source venv/bin/activate
 fi
 
-. config.sh
+HTTP_PORT=8056
+REFRESH_INTERVAL_SECS=10800
 
 schedule_url_poll http://localhost:$HTTP_PORT/process $REFRESH_INTERVAL_SECS &
 
-env TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN \
-  TELEGRAM_CHANNEL_ID=$TELEGRAM_CHANNEL_ID \
-  GOOGLE_API_TOKEN=$GOOGLE_API_TOKEN \
-  FLASK_APP=youtube_audio_bot.app FLASK_RUN_PORT=$HTTP_PORT \
+env \
+  FLASK_APP=youtube_audio_bot.app \
+  FLASK_RUN_PORT=$HTTP_PORT \
   flask run
