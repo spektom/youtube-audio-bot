@@ -45,7 +45,9 @@ def process_new_videos():
                     seconds=1
                 )
             else:
-                from_date = datetime.utcnow() - timedelta(days=1)
+                from_date = datetime.utcnow().astimezone(timezone.utc) - timedelta(
+                    days=1
+                )
             new_videos = youtube.list_channel_videos(source.name, channel_id, from_date)
             for video_id, video_date in new_videos:
                 if process_video(video_id, video_date):
