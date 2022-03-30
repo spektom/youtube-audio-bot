@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 import youtube_audio_bot.tgrm as tgrm
 import youtube_audio_bot.youtube as youtube
 import youtube_audio_bot.audio as audio
@@ -52,4 +51,3 @@ def process_new_videos():
                 if process_video(video_id, video_date):
                     source.last_checked = video_date
                     db.session.commit()
-            time.sleep(10)

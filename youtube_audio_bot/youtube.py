@@ -52,19 +52,21 @@ def list_user_channels(user_name):
 
 
 def list_channel_videos(channel_name, channel_id, published_after):
-    published_after = published_after.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
+    if not channel_id.startswith("UC"):
+        raise Exception("unsupported YouTube channel ID '{channel_id}'")
+    playlist_id = "UU" + channel_id[2:]
     logging.info(
-        f"searching videos on '{channel_name}', published after {published_after}"
+        f"listing videos on '{channel_name}', published after {published_after}"
     )
     r = requests.get(
-        "https://www.googleapis.com/youtube/v3/search",
+        "https://www.googleapis.com/youtube/v3/playlistItems",
         params={
-            "channelId": channel_id,
+            "playlistId": playlist_id,
             "part": "snippet",
             "type": "video",
-            "maxResults": 30,
+            "maxResults": 50,
             "order": "date",
-            "publishedAfter": published_after,
+            "publishedAfter": published_after.strftime("%Y-%m-%dT%H:%M:%S") + "Z",
             "key": get_conf("google_api_token"),
         },
     )
@@ -72,14 +74,12 @@ def list_channel_videos(channel_name, channel_id, published_after):
     j = r.json()
     results = []
     for item in j["items"]:
-        if item["snippet"]["liveBroadcastContent"] == "upcoming":
-            continue
-        if "videoId" not in item["id"]:
-            continue
-        video_id = item["id"]["videoId"]
+        video_id = item["snippet"]["resourceId"]["videoId"]
         video_date = datetime.strptime(
-            item["snippet"]["publishTime"], "%Y-%m-%dT%H:%M:%S%z"
+            item["snippet"]["publishedAt"], "%Y-%m-%dT%H:%M:%S%z"
         ).astimezone(timezone.utc)
+        if video_date <= published_after:
+            continue
         logging.info(f"found new video '{video_id}' published at {video_date}")
         results.append((video_id, video_date))
     logging.info(f"found {len(results)} new videos")
