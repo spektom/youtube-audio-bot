@@ -13,31 +13,38 @@ feedparser.USER_AGENT = (
 )
 
 
+def extract_video(url, target_file, simulate):
+    dl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": target_file,
+        "quiet": True,
+        "simulate": simulate,
+    }
+    downloader = youtube_dl.YoutubeDL(dl_opts)
+    return downloader.extract_info(url)
+
+
 @backoff.on_exception(backoff.expo, Exception)
 def download_audio(video_id):
     url = f"https://www.youtube.com/watch?v={video_id}"
-    logging.info(f"downloading audio from '{url}'")
     tmpfile = f".audio/{video_id}"
     try:
-        dl_opts = {"format": "bestaudio/best", "outtmpl": tmpfile, "quiet": True}
-        dl_opts["simulate"] = True
-        downloader = youtube_dl.YoutubeDL(dl_opts)
-        info = downloader.extract_info(url)
+        logging.info(f"fetching info about '{url}'")
+        info = extract_video(url, tmpfile, simulate=True)
         if info["is_live"]:
             logging.info(f"skipping live streaming video")
             return None
-        dl_opts["simulate"] = False
-        downloader = youtube_dl.YoutubeDL(dl_opts)
-        info = downloader.extract_info(url)
+        author = info["uploader"]
+        title = info["title"]
+        duration = info["duration"]
+        logging.info(f"downloading '{url}', title='{title}', duration={duration}")
+        info = extract_video(url, tmpfile, simulate=False)
     except youtube_dl.utils.DownloadError as e:
         if "live event will begin" in str(e):
             return None
         if "requested format not available" in str(e):
             return None
         raise e
-    author = info["uploader"]
-    title = info["title"]
-    duration = info["duration"]
     # Check that most of the file was downloaded correctly
     if duration == 0 or audio.get_duration(tmpfile) / float(duration) < 0.8:
         os.remove(tmpfile)
@@ -62,7 +69,7 @@ def list_source_videos(source):
     results = []
     for item in feed.entries:
         video_id = item["yt_videoid"]
-        video_date = datetime.fromisoformat(item["published"])
+        video_date = datetime.fromisoformat(item["updated"])
         if video_date <= published_after:
             continue
         logging.info(f"found new video '{video_id}' published at {video_date}")
