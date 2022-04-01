@@ -1,6 +1,7 @@
 Flask-SQLAlchemy == 2.5.1
 Flask == 2.0.3
 backoff == 1.11.1
+feedparser == 6.0.8
 python-telegram-bot == 13.11
 requests == 2.27.1
 youtube_dl == 2021.12.17

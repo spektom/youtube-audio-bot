@@ -22,7 +22,7 @@ if [ -z ${VIRTUAL_ENV+x} ]; then
 fi
 
 HTTP_PORT=8056
-REFRESH_INTERVAL_SECS=3600
+REFRESH_INTERVAL_SECS=1800
 
 schedule_url_poll http://localhost:$HTTP_PORT/process $REFRESH_INTERVAL_SECS &
 

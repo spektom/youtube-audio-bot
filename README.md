@@ -5,8 +5,7 @@ Delivers audio from your favorite YouTube channels to a Telegram channel.
 
 The scheme of operation:
 
- * The process uses Google API key to go over favorite YouTube channels and users,
-   and finds new videos posted since the last time a video was processed from that channel.
+ * The process polls Google RSS feed for finding new favorite YouTube channels and users videos.
  * Audio streams of newly posted videos are downloaded using `youtube-dl` utility.
  * Downloaded audio undergo a voice enhancement process using `ffmpeg`, which equalizes spikes and decays in voices levels.
  * Processed audio stream is split into chunks with size lower than 50Mb, which is a limit for voice message in Telegram.
@@ -43,14 +42,13 @@ The following configuration values must be set:
 
  * `telegram_bot_token` - Token key of the Telegram Bot that delivers audio messages.
  * `telegram_channel_id` - ID of the Telegram channel audio messages will be sent to.
- * `google_api_token` - Google API key used for searching new YouTube channel videos.
 
 Updating configuration using API:
 
 ```bash
 curl -X POST \
      -H "Content-Type: application/json" \
-     -d '{"telegram_bot_token": "...", "telegram_channel_id": "...", "google_api_token": "..."}' \
+     -d '{"telegram_bot_token": "...", "telegram_channel_id": "..."}' \
      http://localhost:8056/config
 ```
 

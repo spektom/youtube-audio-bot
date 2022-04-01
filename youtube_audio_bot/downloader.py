@@ -4,7 +4,6 @@ import youtube_audio_bot.tgrm as tgrm
 import youtube_audio_bot.youtube as youtube
 import youtube_audio_bot.audio as audio
 
-from datetime import datetime, timedelta, timezone
 from .app import db
 from .model import YoutubeSources, ProcessedVideos
 
@@ -34,22 +33,8 @@ def process_video(video_id, publish_date):
 
 def process_new_videos():
     for source in YoutubeSources.query.all():
-        channel_ids = []
-        if source.is_username:
-            channel_ids.extend(youtube.list_user_channels(source.youtube_id))
-        else:
-            channel_ids.append(source.youtube_id)
-        for channel_id in channel_ids:
-            if source.last_checked is not None:
-                from_date = source.last_checked.astimezone(timezone.utc) + timedelta(
-                    seconds=1
-                )
-            else:
-                from_date = datetime.utcnow().astimezone(timezone.utc) - timedelta(
-                    days=1
-                )
-            new_videos = youtube.list_channel_videos(source.name, channel_id, from_date)
-            for video_id, video_date in new_videos:
-                if process_video(video_id, video_date):
-                    source.last_checked = video_date
-                    db.session.commit()
+        new_videos = youtube.list_source_videos(source)
+        for video_id, video_date in new_videos:
+            if process_video(video_id, video_date):
+                source.last_checked = video_date
+                db.session.commit()
