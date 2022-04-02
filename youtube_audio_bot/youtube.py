@@ -24,7 +24,7 @@ def extract_video(url, target_file, simulate):
     return downloader.extract_info(url)
 
 
-@backoff.on_exception(backoff.expo, Exception)
+@backoff.on_exception(backoff.expo, Exception, max_tries=8)
 def download_audio(video_id):
     url = f"https://www.youtube.com/watch?v={video_id}"
     tmpfile = f".audio/{video_id}"
@@ -46,9 +46,12 @@ def download_audio(video_id):
             return None
         raise e
     # Check that most of the file was downloaded correctly
-    if duration == 0 or audio.get_duration(tmpfile) / float(duration) < 0.8:
+    actual_duration = audio.get_duration(tmpfile)
+    if duration == 0 or actual_duration / float(duration) < 0.8:
         os.remove(tmpfile)
-        raise Exception("downloaded file is too small")
+        raise Exception(
+            "downloaded file is too small (expected={duration}, actual={actual_duration})"
+        )
     logging.info(f"saved '{tmpfile}', title='{title}', duration={duration}")
     return (tmpfile, author, title, duration)
 
@@ -69,10 +72,11 @@ def list_source_videos(source):
     results = []
     for item in feed.entries:
         video_id = item["yt_videoid"]
-        video_date = datetime.fromisoformat(item["updated"])
-        if video_date <= published_after:
+        update_time = datetime.fromisoformat(item["updated"])
+        publish_time = datetime.fromisoformat(item["published"])
+        if update_time <= published_after:
             continue
-        logging.info(f"found new video '{video_id}' published at {video_date}")
-        results.append((video_id, video_date))
+        logging.info(f"found new video '{video_id}' published at {publish_time}")
+        results.append((video_id, publish_time))
     logging.info(f"found {len(results)} new videos")
     return sorted(results, key=lambda r: r[1])
