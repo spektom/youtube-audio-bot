@@ -78,7 +78,8 @@ def delete_old_messages(days_back=7):
             bot.delete_message(m.channel_id, m.message_id)
             m.is_deleted = True
             db.session.commit()
+        except telegram.error.BadRequest as e:
+            logging.warning(str(e))
         except telegram.error.RetryAfter as r:
             logging.warning(f"retrying after {r.retry_after} secs")
             time.sleep(r.retry_after)
-            raise r

@@ -32,7 +32,7 @@ def convert_to_mp3(input_file, offset, size_limit, output_file):
             "-i",
             input_file,
             "-af",
-            f"compand=0:0.2:-90/-900|-70/-70|-30/-30|-25/-20|-20/-12|0/-12:0.01:7:0:0",
+            f"compand=0|0:1|1:-90/-900|-70/-70|-30/-9|0/-3:6:0:0:0",
             "-acodec",
             "mp3",
             "-ss",

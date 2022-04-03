@@ -40,10 +40,13 @@ def download_audio(video_id):
         logging.info(f"downloading '{url}', title='{title}', duration={duration}")
         info = extract_video(url, tmpfile, simulate=False)
     except youtube_dl.utils.DownloadError as e:
-        if "live event will begin" in str(e):
-            return None
-        if "requested format not available" in str(e):
-            return None
+        for allowed_error in [
+            "confirm your age",
+            "live event will begin",
+            "requested format not available",
+        ]:
+            if allowed_error in str(e):
+                return None
         raise e
     # Check that most of the file was downloaded correctly
     actual_duration = audio.get_duration(tmpfile)
@@ -62,9 +65,7 @@ def list_source_videos(source):
         if source.last_checked is not None
         else datetime.utcnow().astimezone(timezone.utc) - timedelta(days=1)
     )
-    logging.info(
-        f"listing videos on '{source.name}', published after {published_after}"
-    )
+    logging.info(f"listing videos on '{source.name}' published after {published_after}")
     arg = "user" if source.is_username else "channel_id"
     feed = feedparser.parse(
         f"https://www.youtube.com/feeds/videos.xml?{arg}={source.youtube_id}"
@@ -78,5 +79,5 @@ def list_source_videos(source):
             continue
         logging.info(f"found new video '{video_id}' published at {publish_time}")
         results.append((video_id, publish_time))
-    logging.info(f"found {len(results)} new videos")
+    logging.info(f"found {len(results)} videos")
     return sorted(results, key=lambda r: r[1])
