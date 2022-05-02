@@ -31,6 +31,7 @@ def add_source():
 
 @app.route("/process", methods=["GET"])
 def process():
-    tgrm.delete_old_messages()
+    # Messages can't be deleted if older than 48 hours
+    #tgrm.delete_old_messages()
     downloader.process_new_videos()
     return "", 200

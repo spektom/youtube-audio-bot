@@ -15,7 +15,7 @@ feedparser.USER_AGENT = (
 
 def extract_video(url, target_file, simulate):
     dl_opts = {
-        "format": "bestaudio/best",
+        "format": "bestaudio/m4a/best",
         "outtmpl": target_file,
         "quiet": True,
         "simulate": simulate,
@@ -43,6 +43,7 @@ def download_audio(video_id):
         for allowed_error in [
             "confirm your age",
             "live event will begin",
+            "Premieres in",
             "requested format not available",
         ]:
             if allowed_error in str(e):
@@ -77,7 +78,7 @@ def list_source_videos(source):
         publish_time = datetime.fromisoformat(item["published"])
         if update_time <= published_after:
             continue
-        logging.info(f"found new video '{video_id}' published at {publish_time}")
+        logging.debug(f"found new video '{video_id}' published at {publish_time}")
         results.append((video_id, publish_time))
-    logging.info(f"found {len(results)} videos")
+    logging.debug(f"found {len(results)} videos")
     return sorted(results, key=lambda r: r[1])

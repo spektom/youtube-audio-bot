@@ -13,7 +13,7 @@ def process_video(video_id, publish_date):
         ProcessedVideos.query.filter(ProcessedVideos.video_id == video_id).first()
         is not None
     ):
-        logging.info(f"skipping already processed video '{video_id}'")
+        logging.debug(f"skipping already processed video '{video_id}'")
         return False
     r = youtube.download_audio(video_id)
     if r is None:
