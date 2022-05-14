@@ -41,6 +41,8 @@ The script invokes `setup.sh` on the first run, if the Python environment is not
 The following configuration values must be set:
 
  * `telegram_bot_token` - Token key of the Telegram Bot that delivers audio messages.
+ * `telegram_api_id` - [Telegram API ID](https://core.telegram.org/api/obtaining_api_id) for deleting old audio messages from a channel.
+ * `telegram_api_hash` - [Telegram API hash](https://core.telegram.org/api/obtaining_api_id) for deleting old audio messages from a channel.
  * `telegram_channel_id` - ID of the Telegram channel audio messages will be sent to.
 
 Updating configuration using API:
@@ -48,7 +50,7 @@ Updating configuration using API:
 ```bash
 curl -X POST \
      -H "Content-Type: application/json" \
-     -d '{"telegram_bot_token": "...", "telegram_channel_id": "..."}' \
+     -d '{"telegram_bot_token": "...", "telegram_channel_id": "-1234..."}' \
      http://localhost:8056/config
 ```
 

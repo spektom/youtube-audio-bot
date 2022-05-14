@@ -1,5 +1,6 @@
 Flask-SQLAlchemy == 2.5.1
 Flask == 2.0.3
+Telethon == 1.24.0
 backoff == 1.11.1
 feedparser == 6.0.8
 python-telegram-bot == 13.11

@@ -4,11 +4,13 @@ import sys
 import telegram
 import time
 import backoff
+import asyncio
 
 from datetime import datetime, timedelta
 from .app import db
 from .config import get_conf
 from .model import TelegramMessages
+from telethon.sync import TelegramClient, events
 
 AUDIO_FILE_SIZE_LIMIT = 48000000
 
@@ -69,17 +71,18 @@ def send_audio_files(
 
 def delete_old_messages(days_back=7):
     sent_ago = datetime.utcnow() - timedelta(days=days_back)
-    bot = create_bot()
     logging.info(f"deleting Telegram messages sent before {sent_ago}")
-    for m in TelegramMessages.query.filter(
-        (TelegramMessages.is_deleted == False) & (TelegramMessages.sent_on < sent_ago)
-    ):
-        try:
-            bot.delete_message(m.channel_id, m.message_id)
-            m.is_deleted = True
-            db.session.commit()
-        except telegram.error.BadRequest as e:
-            logging.warning(str(e))
-        except telegram.error.RetryAfter as r:
-            logging.warning(f"retrying after {r.retry_after} secs")
-            time.sleep(r.retry_after)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    with TelegramClient(
+        "youtube-audio-bot",
+        get_conf("telegram_api_id"),
+        get_conf("telegram_api_hash"),
+        loop=loop,
+    ) as client:
+        channel = client.get_entity(int(get_conf("telegram_channel_id")))
+        ids = []
+        for message in client.iter_messages(channel):
+            if message.date.timestamp() < sent_ago.timestamp():
+                ids.append(message.id)
+        client.delete_messages(entity=channel, message_ids=ids)

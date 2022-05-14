@@ -54,7 +54,7 @@ def download_audio(video_id):
     if duration == 0 or actual_duration / float(duration) < 0.8:
         os.remove(tmpfile)
         raise Exception(
-            "downloaded file is too small (expected={duration}, actual={actual_duration})"
+            f"downloaded file is too small (expected={duration}, actual={actual_duration})"
         )
     logging.info(f"saved '{tmpfile}', title='{title}', duration={duration}")
     return (tmpfile, author, title, duration)
