@@ -2,7 +2,7 @@ import logging
 import feedparser
 import os
 import requests
-import youtube_dl
+import yt_dlp
 import backoff
 import youtube_audio_bot.audio as audio
 
@@ -20,7 +20,7 @@ def extract_video(url, target_file, simulate):
         "quiet": True,
         "simulate": simulate,
     }
-    downloader = youtube_dl.YoutubeDL(dl_opts)
+    downloader = yt_dlp.YoutubeDL(dl_opts)
     return downloader.extract_info(url)
 
 
@@ -39,7 +39,7 @@ def download_audio(video_id):
         duration = info["duration"]
         logging.info(f"downloading '{url}', title='{title}', duration={duration}")
         info = extract_video(url, tmpfile, simulate=False)
-    except youtube_dl.utils.DownloadError as e:
+    except yt_dlp.utils.DownloadError as e:
         for allowed_error in [
             "confirm your age",
             "live event will begin",

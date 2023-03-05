@@ -17,12 +17,14 @@ The scheme of operation:
  * Linux or Windows WSL environment.
  * Python3
  * ffmpeg
+ * libwebkit2gtk-4.0-dev
 
 To install all the dependencies on Ubuntu-like system, run:
 
 ```bash
 apt install -y ffmpeg \
-      python3 python3-wheel python3-venv python3-pip
+      python3 python3-wheel python3-venv python3-pip \
+      libwebkit2gtk-4.0-dev
 ```
 
 ## Configuration
