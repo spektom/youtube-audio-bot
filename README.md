@@ -36,6 +36,11 @@ Refer to [updating configuration](#updating-configuration) section below.
 Use `run.sh` to run the process.
 The script invokes `setup.sh` on the first run, if the Python environment is not prepared yet.
 
+It's advised to set up a supervisor daemon to handle the process lifetime.
+
+To install supervisor daemon, run: `sudo apt install supervisor`.
+Sample configuration can be found in file `supervisor.conf.template`.
+
 ## HTTP Endpoints
 
 ### Updating configuration

@@ -131,3 +131,4 @@ dmypy.json
 .audio/
 *.db
 *.session
+supervisor.conf

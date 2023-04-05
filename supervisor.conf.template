@@ -1,0 +1,4 @@
+[program:youtube-audio-bot]
+user=michael
+directory=/home/michael/projects/youtube-audio-bot
+command=/home/michael/projects/youtube-audio-bot/run.sh
