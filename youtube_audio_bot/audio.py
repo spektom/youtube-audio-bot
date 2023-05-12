@@ -2,6 +2,8 @@ import logging
 import os
 import subprocess
 
+from datetime import timedelta
+
 
 def get_duration(audio_file):
     p = subprocess.run(
@@ -20,9 +22,9 @@ def get_duration(audio_file):
     return float(p.stdout) if p.returncode == 0 else 0
 
 
-def convert_to_mp3(input_file, offset, size_limit, output_file):
+def convert_to_ogg(input_file, offset, size_limit, output_file):
     logging.info(f"processing '{input_file}', offset={offset}")
-    # Convert to MP3 and normalize voice volume
+    # Convert to OGG and normalize voice volume
     subprocess.run(
         [
             "ffmpeg",
@@ -34,7 +36,7 @@ def convert_to_mp3(input_file, offset, size_limit, output_file):
             "-af",
             f"compand=0|0:1|1:-90/-900|-70/-70|-30/-9|0/-3:6:0:0:0",
             "-acodec",
-            "mp3",
+            "libvorbis",
             "-ss",
             str(offset),
             "-fs",
@@ -45,22 +47,27 @@ def convert_to_mp3(input_file, offset, size_limit, output_file):
     )
 
 
-def split_convert_to_mp3(audio_file, duration_secs, max_size_limit):
+def split_convert_to_ogg(audio_file, duration_secs, max_size_limit):
     if os.path.getsize(audio_file) < max_size_limit:
         return [(audio_file, duration_secs)]
     parts = []
     part_idx = 0
     offset = 0
-    logging.info(f"splitting '{audio_file}', duration={duration_secs}")
+    logging.info(
+        f"splitting '{audio_file}', duration={timedelta(seconds=duration_secs)}"
+    )
     while offset < duration_secs:
-        part_file = f"{audio_file}-{part_idx}.mp3"
+        part_file = f"{audio_file}-{part_idx}.ogg"
         if not os.path.exists(part_file):
-            convert_to_mp3(audio_file, offset, max_size_limit, part_file)
+            convert_to_ogg(audio_file, offset, max_size_limit, part_file)
         part_len = get_duration(part_file)
         if part_len == 0:
             os.remove(part_file)
             break
-        logging.info(f"created '{part_file}', duration={part_len}")
+        file_size = os.path.getsize(part_file)
+        logging.info(
+            f"created '{part_file}', duration={timedelta(seconds=int(duration))}, file_size={file_size}"
+        )
         parts.append((part_file, part_len))
         offset += part_len
         part_idx += 1

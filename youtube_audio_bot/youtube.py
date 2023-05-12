@@ -19,6 +19,7 @@ def extract_video(url, target_file, simulate):
         "outtmpl": target_file,
         "quiet": True,
         "simulate": simulate,
+        "noprogress": True,
     }
     downloader = yt_dlp.YoutubeDL(dl_opts)
     return downloader.extract_info(url)
@@ -37,7 +38,9 @@ def download_audio(video_id):
         author = info["uploader"]
         title = info["title"]
         duration = info["duration"]
-        logging.info(f"downloading '{url}', title='{title}', duration={duration}")
+        logging.info(
+            f"downloading '{url}', title='{title}', duration={timedelta(seconds=duration)}"
+        )
         info = extract_video(url, tmpfile, simulate=False)
     except yt_dlp.utils.DownloadError as e:
         for allowed_error in [
@@ -54,9 +57,11 @@ def download_audio(video_id):
     if duration == 0 or actual_duration / float(duration) < 0.8:
         os.remove(tmpfile)
         raise Exception(
-            f"downloaded file is too small (expected={duration}, actual={actual_duration})"
+            f"downloaded file is too small (expected={duration}, actual={timedelta(seconds=int(actual_duration))})"
         )
-    logging.info(f"saved '{tmpfile}', title='{title}', duration={duration}")
+    logging.info(
+        f"saved '{tmpfile}', title='{title}', duration={timedelta(seconds=duration)}"
+    )
     return (tmpfile, author, title, duration)
 
 

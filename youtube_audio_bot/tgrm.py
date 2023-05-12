@@ -21,7 +21,9 @@ def create_bot():
 
 @backoff.on_exception(backoff.expo, Exception)
 def send_audio_file(audio_file, duration, author, title):
-    logging.info(f"sending '{audio_file}', title='{title}', duration={duration}")
+    logging.info(
+        f"sending '{audio_file}', title='{title}', duration={timedelta(seconds=duration)}"
+    )
     chat_id = get_conf("telegram_channel_id")
     with open(audio_file, "rb") as f:
         try:

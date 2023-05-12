@@ -19,7 +19,7 @@ def process_video(video_id, publish_date):
     if r is None:
         return False
     audio_file, author, title, duration_secs = r
-    audio_parts = audio.split_convert_to_mp3(
+    audio_parts = audio.split_convert_to_ogg(
         audio_file, duration_secs, tgrm.AUDIO_FILE_SIZE_LIMIT
     )
     tgrm.send_audio_files(video_id, author, title, publish_date, audio_parts)
