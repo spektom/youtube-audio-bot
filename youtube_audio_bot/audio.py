@@ -66,7 +66,7 @@ def split_convert_to_ogg(audio_file, duration_secs, max_size_limit):
             break
         file_size = os.path.getsize(part_file)
         logging.info(
-            f"created '{part_file}', duration={timedelta(seconds=int(duration))}, file_size={file_size}"
+            f"created '{part_file}', duration={timedelta(seconds=int(part_len))}, file_size={file_size}"
         )
         parts.append((part_file, part_len))
         offset += part_len
